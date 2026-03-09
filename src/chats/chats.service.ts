@@ -1,114 +1,106 @@
-import { Injectable } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class ChatsService {
+  constructor(@InjectModel('Message') private messageModel: Model<any>) {}
 
-  constructor(
-    @InjectModel('Message') private messageModel: Model<any>
-  ) {}
-
-  async saveMessage(data) {
-
+  async saveMessage(data: any) {
     const message = new this.messageModel(data);
-
     return message.save();
-
   }
 
+  async getUserChats(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
 
- async getUserChats(userId: string) {
-
-  const chats = await this.messageModel.aggregate([
-
-    {
-      $match: {
-        $or: [
-          { senderId: userId },
-          { receiverId: userId }
-        ]
-      }
-    },
-
-    {
-      $sort: { timestamp: -1 }
-    },
-
-    {
-      $group: {
-        _id: {
-          $cond: [
-            { $eq: ['$senderId', userId] },
-            '$receiverId',
-            '$senderId'
-          ]
+    const chats = await this.messageModel.aggregate([
+      {
+        $addFields: {
+          senderObjId: { $toObjectId: '$senderId' },
+          receiverObjId: { $toObjectId: '$receiverId' },
         },
-
-        lastMessage: { $first: '$message' },
-
-        time: { $first: '$timestamp' },
-
-        unread: {
-          $sum: {
+      },
+      {
+        $match: {
+          $or: [{ senderObjId: userObjectId }, { receiverObjId: userObjectId }],
+        },
+      },
+      { $sort: { timestamp: -1 } },
+      {
+        $group: {
+          _id: {
             $cond: [
-              {
-                $and: [
-                  { $eq: ['$receiverId', userId] },
-                  { $eq: ['$isRead', false] }
-                ]
-              },
-              1,
-              0
-            ]
-          }
-        }
-      }
-    },
+              { $eq: ['$senderId', userId] },
+              '$receiverId',
+              '$senderId',
+            ],
+          },
+          lastMessage: { $first: '$message' },
+          time: { $first: '$timestamp' },
+          unread: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$receiverId', userId] },
+                    { $eq: ['$isRead', false] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          contactObjId: { $toObjectId: '$_id' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'contactObjId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: false } },
+      {
+        $project: {
+          contactId: '$_id',
+          lastMessage: 1,
+          time: 1,
+          unread: 1,
+          name: '$user.name',
+          photo: '$user.photo',
+          email: '$user.email',
+        },
+      },
+      { $sort: { time: -1 } },
+    ]);
 
-    // JOIN USERS COLLECTION
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'user'
-      }
-    },
-
-    {
-      $unwind: '$user'
-    },
-
-    {
-      $project: {
-        contactId: '$_id',
-        lastMessage: 1,
-        time: 1,
-        unread: 1,
-        name: '$user.name',
-        photo: '$user.photo'
-      }
-    },
-
-    {
-      $sort: { time: -1 }
-    }
-
-  ]);
-
-  return chats;
-}
-
-  async getMessages(user1, user2) {
-
-    return this.messageModel.find({
-      $or: [
-        { senderId: user1, receiverId: user2 },
-        { senderId: user2, receiverId: user1 }
-      ]
-    });
-
+    // If no chat history, return empty (no fallback to all users)
+    return chats;
   }
 
+  async getMessages(user1: string, user2: string) {
+    return this.messageModel
+      .find({
+        $or: [
+          { senderId: user1, receiverId: user2 },
+          { senderId: user2, receiverId: user1 },
+        ],
+      })
+      .sort({ timestamp: 1 });
+  }
+
+  async markMessagesRead(senderId: string, receiverId: string) {
+    return this.messageModel.updateMany(
+      { senderId, receiverId, isRead: false },
+      { $set: { isRead: true } },
+    );
+  }
 }
