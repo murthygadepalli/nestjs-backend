@@ -12,27 +12,38 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<User>
   ) {}
 
-  async googleLogin(data) {
+async googleLogin(data) {
 
-    let user = await this.userModel.findOne({ email: data.email });
+  let user = await this.userModel.findOne({ email: data.email });
 
-    if (!user) {
+  if (!user) {
 
-      user = await this.userModel.create({
-        name: data.name,
-        email: data.email,
-        photo: data.photo,
-        firebaseToken: data.firebaseToken
-      });
+    user = await this.userModel.create({
+      name: data.name,
+      email: data.email,
+      photo: data.photo,
+      phone: data.phone,
+      fcmToken: data.fcmToken
+    });
 
-    }
+  } else {
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET!
-    );
+    // update FCM token when user logs in again
+    user.fcmToken = data.fcmToken;
+    await user.save();
 
-    return { user, token };
   }
 
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET!,
+    { expiresIn: "30d" }
+  );
+
+  return {
+    message: "Login successful",
+    user,
+    token
+  };
+}
 }
