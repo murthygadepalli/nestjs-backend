@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { ChatsService } from './chats.service';
 import { ChatsGateway } from './chats.gateway';
+import { ChatsController } from './chats.controller';
 import { Message, MessageSchema } from './message.schema';
 
 @Module({
@@ -11,6 +12,7 @@ import { Message, MessageSchema } from './message.schema';
       { name: Message.name, schema: MessageSchema }
     ])
   ],
+  controllers: [ChatsController],   // ✅ ADD THIS
   providers: [ChatsService, ChatsGateway],
   exports: [ChatsService]
 })
