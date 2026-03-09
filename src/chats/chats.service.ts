@@ -18,17 +18,23 @@ export class ChatsService {
   }
 
 
-  async getUserChats(userId: string) {
-  // Get the last message of each conversation
+ async getUserChats(userId: string) {
+
   const chats = await this.messageModel.aggregate([
+
     {
       $match: {
-        $or: [{ senderId: userId }, { receiverId: userId }],
-      },
+        $or: [
+          { senderId: userId },
+          { receiverId: userId }
+        ]
+      }
     },
+
     {
-      $sort: { timestamp: -1 },
+      $sort: { timestamp: -1 }
     },
+
     {
       $group: {
         _id: {
@@ -38,20 +44,62 @@ export class ChatsService {
             '$senderId'
           ]
         },
+
         lastMessage: { $first: '$message' },
+
         time: { $first: '$timestamp' },
+
         unread: {
           $sum: {
-            $cond: [{ $and: [{ $eq: ['$receiverId', userId] }, { $eq: ['$isRead', false] }] }, 1, 0]
+            $cond: [
+              {
+                $and: [
+                  { $eq: ['$receiverId', userId] },
+                  { $eq: ['$isRead', false] }
+                ]
+              },
+              1,
+              0
+            ]
           }
-        },
-        contactId: { $first: { $cond: [{ $eq: ['$senderId', userId] }, '$receiverId', '$senderId'] } }
+        }
       }
+    },
+
+    // JOIN USERS COLLECTION
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'user'
+      }
+    },
+
+    {
+      $unwind: '$user'
+    },
+
+    {
+      $project: {
+        contactId: '$_id',
+        lastMessage: 1,
+        time: 1,
+        unread: 1,
+        name: '$user.name',
+        photo: '$user.photo'
+      }
+    },
+
+    {
+      $sort: { time: -1 }
     }
+
   ]);
 
   return chats;
 }
+
   async getMessages(user1, user2) {
 
     return this.messageModel.find({

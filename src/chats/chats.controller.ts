@@ -10,4 +10,6 @@ export class ChatsController {
   async getUserChats(@Query('userId') userId: string) {
     return this.chatsService.getUserChats(userId);
   }
+
+  
 }
