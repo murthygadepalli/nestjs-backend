@@ -34,8 +34,10 @@ export class AuthService {
       const name = payload?.name || data.name;
 
       let user = await this.userModel.findOne({ email });
+      let isNewUser = false;
 
       if (!user) {
+        isNewUser = true;
         user = await this.userModel.create({
           name: name,
           email: email,
@@ -61,14 +63,17 @@ export class AuthService {
         message: "Login successful",
         user,
         token,
+        isNewUser,
       };
     } catch (e: any) {
       // Fallback for demo without correct client ID but received a token (e.g. from Flutter generic auth process)
       console.warn("Google token verification failed, using token payload directly if in dev environment. Error:", e.message);
       
       let user = await this.userModel.findOne({ email: data.email });
+      let isNewUser = false;
 
       if (!user) {
+        isNewUser = true;
         user = await this.userModel.create({
           name: data.name,
           email: data.email,
@@ -92,7 +97,8 @@ export class AuthService {
       return {
         message: "Login successful (dev fallback)",
         user,
-        token
+        token,
+        isNewUser
       };
     }
   }

@@ -112,4 +112,11 @@ export class ChatsService {
       ],
     });
   }
+
+  async deleteMessage(messageId: string, userId: string) {
+    return this.messageModel.deleteOne({
+      _id: messageId,
+      $or: [{ senderId: userId }, { receiverId: userId }],
+    });
+  }
 }
