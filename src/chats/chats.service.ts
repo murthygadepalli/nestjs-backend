@@ -103,4 +103,13 @@ export class ChatsService {
       { $set: { isRead: true } },
     );
   }
+
+  async deleteChat(user1: string, user2: string) {
+    return this.messageModel.deleteMany({
+      $or: [
+        { senderId: user1, receiverId: user2 },
+        { senderId: user2, receiverId: user1 },
+      ],
+    });
+  }
 }

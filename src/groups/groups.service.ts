@@ -65,4 +65,9 @@ export class GroupsService {
   async getGroupMessageById(id: string) {
     return this.groupMessageModel.findById(id).populate('senderId', 'name photo');
   }
+
+  async deleteGroup(groupId: string) {
+    await this.groupMessageModel.deleteMany({ groupId });
+    return this.groupModel.findByIdAndDelete(groupId);
+  }
 }

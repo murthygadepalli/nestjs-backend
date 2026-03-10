@@ -15,6 +15,11 @@ export class UsersController {
     return users.filter(user => user._id.toString() !== req.user?._id.toString());
   }
 
+  @Get('profile')
+  getProfile(@Request() req) {
+    return this.usersService.findById(req.user._id.toString());
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findById(id);

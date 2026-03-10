@@ -6,6 +6,7 @@ import {
   Param,
   Request,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChatsService } from './chats.service';
@@ -34,5 +35,10 @@ export class ChatsController {
       body.senderId,
       req.user._id.toString(),
     );
+  }
+
+  @Delete(':contactId')
+  async deleteChat(@Request() req, @Param('contactId') contactId: string) {
+    return this.chatsService.deleteChat(req.user._id.toString(), contactId);
   }
 }
