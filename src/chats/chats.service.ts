@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class ChatsService {
-  constructor(@InjectModel('Message') private messageModel: Model<any>) {}
+  constructor(@InjectModel('Message') private messageModel: Model<any>) { }
 
   async saveMessage(data: any) {
     const message = new this.messageModel(data);
@@ -92,6 +92,14 @@ export class ChatsService {
         $or: [
           { senderId: user1, receiverId: user2 },
           { senderId: user2, receiverId: user1 },
+          {
+            senderId: new Types.ObjectId(user1) as any,
+            receiverId: new Types.ObjectId(user2) as any,
+          },
+          {
+            senderId: new Types.ObjectId(user2) as any,
+            receiverId: new Types.ObjectId(user1) as any,
+          },
         ],
       })
       .sort({ timestamp: 1 });
