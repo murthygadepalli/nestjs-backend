@@ -9,6 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GroupsService } from './groups.service';
 import { FirebaseService } from '../notifications/firebase.service';
+import { UsersService } from '../users/users.service';
 import * as jwt from 'jsonwebtoken';
 
 @WebSocketGateway({ cors: { origin: '*' } })
@@ -16,7 +17,8 @@ export class GroupsGateway implements OnGatewayConnection {
   constructor(
     private groupsService: GroupsService,
     private firebaseService: FirebaseService,
-  ) {}
+    private usersService: UsersService,
+  ) { }
 
   @WebSocketServer()
   server: Server;
@@ -86,6 +88,31 @@ export class GroupsGateway implements OnGatewayConnection {
 
     // emit to group room
     this.server.to(`group_${data.groupId}`).emit('newGroupMessage', payload);
+
+    // Push notifications for other members
+    try {
+      const group = await this.groupsService.getGroupById(data.groupId);
+      if (group && group.members) {
+        const otherMembers = group.members.filter(id => id !== senderId);
+        const users = await this.usersService.findByIds(otherMembers);
+
+        for (const user of users) {
+          if (user.fcmToken) {
+            await this.firebaseService.sendPush(user.fcmToken, {
+              title: group.name,
+              body: `${payload.senderName}: ${data.message}`,
+              data: {
+                type: 'group_message',
+                groupId: data.groupId,
+                senderId: senderId,
+              },
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Group notification error:', e);
+    }
 
     return payload;
   }

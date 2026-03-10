@@ -7,6 +7,7 @@ import { Group, GroupSchema } from './group.schema';
 import { GroupMessage, GroupMessageSchema } from './group-message.schema';
 import { GroupsGateway } from './groups.gateway';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -15,8 +16,9 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: GroupMessage.name, schema: GroupMessageSchema },
     ]),
     NotificationsModule,
+    UsersModule,
   ],
   controllers: [GroupsController],
   providers: [GroupsService, GroupsGateway],
 })
-export class GroupsModule {}
+export class GroupsModule { }

@@ -116,11 +116,19 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         console.log(`[DEBUG] Attempting to send push notification to ${data.receiverId}`);
         const receiver = await this.usersService.findById(data.receiverId);
         if (receiver && receiver.fcmToken) {
+          const sender = await this.usersService.findById(messagePayload.senderId);
+          const senderName = sender?.name || 'New Message';
+
           console.log(`[DEBUG] Found FCM token for receiver: ${receiver.fcmToken.substring(0, 10)}...`);
-          await this.firebaseService.sendPush(
-            receiver.fcmToken,
-            `New message: ${data.message}`,
-          );
+          console.log(`[DEBUG] Found FCM token for receiver: ${receiver.fcmToken.substring(0, 10)}...`);
+          await this.firebaseService.sendPush(receiver.fcmToken, {
+            title: senderName,
+            body: data.message,
+            data: {
+              type: 'chat_message',
+              senderId: messagePayload.senderId,
+            },
+          });
         } else {
           console.warn(`[DEBUG] No FCM token found or receiver not found for ID: ${data.receiverId}`);
         }

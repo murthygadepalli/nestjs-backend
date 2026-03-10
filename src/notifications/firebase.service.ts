@@ -28,15 +28,23 @@ export class FirebaseService {
     }
   }
 
-  async sendPush(token: string, message: string) {
+  async sendPush(
+    token: string,
+    payload: { title?: string; body: string; data?: Record<string, string> } | string,
+  ) {
     try {
+      const title = typeof payload === 'string' ? 'New Message' : (payload.title || 'New Message');
+      const body = typeof payload === 'string' ? payload : payload.body;
+      const data = typeof payload === 'string' ? {} : (payload.data || {});
+
       console.log(`[DEBUG] Sending push to token: ${token.substring(0, 10)}...`);
       const res = await admin.messaging().send({
         token,
         notification: {
-          title: 'New Message',
-          body: message,
+          title,
+          body,
         },
+        data: data,
       });
       console.log('✅ Push notification sent successfully:', res);
       return res;

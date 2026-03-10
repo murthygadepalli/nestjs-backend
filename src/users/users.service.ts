@@ -8,7 +8,7 @@ export class UsersService {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<User>
-  ) {}
+  ) { }
 
   async findAll() {
     return this.userModel.find();
@@ -16,6 +16,10 @@ export class UsersService {
 
   async findById(id: string): Promise<User | null> {
     return this.userModel.findById(id).exec();
+  }
+
+  async findByIds(ids: string[]): Promise<User[]> {
+    return this.userModel.find({ _id: { $in: ids } }).exec();
   }
 
   async update(id: string, data: any): Promise<User | null> {
