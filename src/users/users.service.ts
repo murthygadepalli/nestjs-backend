@@ -14,11 +14,11 @@ export class UsersService {
     return this.userModel.find();
   }
 
-  async findById(id: string): Promise<User> {
+  async findById(id: string): Promise<User | null> {
     return this.userModel.findById(id).exec();
   }
 
-  async update(id: string, data: any): Promise<User> {
+  async update(id: string, data: any): Promise<User | null> {
     return this.userModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 }
