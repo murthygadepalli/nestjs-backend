@@ -19,7 +19,7 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private chatsService: ChatsService,
     private usersService: UsersService,
     private firebaseService: FirebaseService,
-  ) {}
+  ) { }
 
   @WebSocketServer()
   server: Server;
@@ -111,17 +111,24 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // send FCM push notification
     try {
       const receiverOnline = this.userSocketMap.has(data.receiverId);
+      console.log(`[DEBUG] Receiver online status: ${receiverOnline}`);
       if (!receiverOnline && data.receiverId) {
+        console.log(`[DEBUG] Attempting to send push notification to ${data.receiverId}`);
         const receiver = await this.usersService.findById(data.receiverId);
         if (receiver && receiver.fcmToken) {
+          console.log(`[DEBUG] Found FCM token for receiver: ${receiver.fcmToken.substring(0, 10)}...`);
           await this.firebaseService.sendPush(
             receiver.fcmToken,
             `New message: ${data.message}`,
           );
+        } else {
+          console.warn(`[DEBUG] No FCM token found or receiver not found for ID: ${data.receiverId}`);
         }
+      } else if (receiverOnline) {
+        console.log(`[DEBUG] Receiver is online, skipping push.`);
       }
     } catch (e) {
-      console.warn('Could not send push notification:', e.message);
+      console.warn('❌ [DEBUG] Could not send push notification:', e.message);
     }
 
     return messagePayload;
